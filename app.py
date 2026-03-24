@@ -2,9 +2,11 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
+import plotly.graph_objects as go
 from src.modelling.trip_generation import calculate_regression_trips, cross_classification_trips, get_sample_trip_rates
 from src.modelling.trip_distribution import gravity_model, furness_balancing
 from src.modelling.modal_split import calculate_utilities, multinomial_logit
+from src.modelling.traffic_assignment import bpr_function, solve_2path_equilibrium
 
 def main():
     st.set_page_config(page_title="Transport Modelling Exercises", layout="wide")
@@ -277,6 +279,79 @@ def main():
         # Visualizations
         fig_pie = px.pie(res_df, values='Probability', names='Mode', title='Mode Share Distribution', hole=.3)
         st.plotly_chart(fig_pie, use_container_width=True)
+
+    elif module == "4. Traffic Assignment":
+        st.header("Step 4: Traffic Assignment")
+        
+        with st.expander("Theoretical Concept: Link Performance & Equilibrium"):
+            st.write("""
+            Traffic Assignment predicts which routes travelers will take on the network.
+            
+            **Link Performance (BPR Function):**
+            Travel time increases as the flow ($V$) approaches capacity ($C$):
+            $$T = T_0 \\cdot (1 + \\alpha (V/C)^\\beta)$$
+            
+            **User Equilibrium (Wardrop's 1st Principle):**
+            "The journey times in all routes actually used are equal and less than those which would be experienced by a single vehicle on any unused route."
+            """)
+
+        st.subheader("Exercise: 2-Path User Equilibrium")
+        
+        st.markdown("### Scenario: Origin O to Destination D")
+        demand = st.number_input("Total Demand (Veh/hr)", min_value=0, value=2500, step=500)
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("### Path 1 (Highway)")
+            t0_1 = st.number_input("Free Flow Time 1 (min)", value=10.0, key="t01")
+            cap_1 = st.number_input("Capacity 1 (Veh/hr)", value=1800.0, key="cap1")
+            
+        with col2:
+            st.markdown("### Path 2 (Local Road)")
+            t0_2 = st.number_input("Free Flow Time 2 (min)", value=15.0, key="t02")
+            cap_2 = st.number_input("Capacity 2 (Veh/hr)", value=1200.0, key="cap2")
+            
+        params1 = {"t0": t0_1, "cap": cap_1, "alpha": 0.15, "beta": 4.0}
+        params2 = {"t0": t0_2, "cap": cap_2, "alpha": 0.15, "beta": 4.0}
+        
+        # Calculate Equilibrium
+        f1, f2, tt = solve_2path_equilibrium(demand, params1, params2)
+        
+        st.divider()
+        st.subheader("Equilibrium Results")
+        
+        met1, met2, met3 = st.columns(3)
+        met1.metric("Flow Path 1", f"{f1:,.0f} veh/hr")
+        met2.metric("Flow Path 2", f"{f2:,.0f} veh/hr")
+        met3.metric("Travel Time", f"{tt:.2f} min")
+        
+        # Visualization: Sensitivity of Travel Time to Flow
+        flow_range = np.linspace(0, demand, 100)
+        t1_vals = [bpr_function(t0_1, cap_1, f, 0.15, 4.0) for f in flow_range]
+        t2_vals = [bpr_function(t0_2, cap_2, demand - f, 0.15, 4.0) for f in flow_range]
+        
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=flow_range, y=t1_vals, name="Path 1 Time", line=dict(color='blue')))
+        fig.add_trace(go.Scatter(x=flow_range, y=t2_vals, name="Path 2 Time", line=dict(color='red')))
+        
+        # Mark Equilibrium
+        fig.add_trace(go.Scatter(
+            x=[f1], y=[tt], 
+            mode='markers+text', 
+            name="Equilibrium",
+            text=["User Equilibrium"],
+            textposition="top center",
+            marker=dict(color='green', size=12, symbol='star')
+        ))
+        
+        fig.update_layout(
+            title="User Equilibrium Search",
+            xaxis_title="Flow on Path 1 (veh/hr)",
+            yaxis_title="Travel Time (min)",
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        )
+        st.plotly_chart(fig, use_container_width=True)
 
 if __name__ == "__main__":
     main()
