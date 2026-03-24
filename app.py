@@ -105,23 +105,29 @@ def main():
             edited_rates = st.data_editor(rates_df)
             
             # Input Household Counts
-            st.markdown("### 2. Number of Households per Category")
+            st.markdown("### 2. Number of Households per Category (Cross-Distribution)")
+            
+            # Initialize with default values matching the dimensions of the rate table
+            default_hh_data = pd.DataFrame(
+                [[50, 20, 5], [30, 60, 15], [10, 25, 40]], 
+                index=rates_df.index, 
+                columns=rates_df.columns
+            )
+            edited_hh = st.data_editor(default_hh_data, key="hh_editor")
+            
+            # Prepare data for calculation
             hh_counts = {}
-            cols = st.columns(len(rates_df.columns))
-            
-            for i, car_cat in enumerate(rates_df.columns):
-                with cols[i]:
-                    st.write(f"**{car_cat}**")
-                    for size_cat in rates_df.index:
-                        key = f"{size_cat}_{car_cat}"
-                        val = st.number_input(f"{size_cat}", min_value=0, value=10, key=key)
-                        hh_counts[key] = val
-            
-            # Prepare rates for calculation
             flat_rates = {}
+            
             for car_cat in edited_rates.columns:
                 for size_cat in edited_rates.index:
-                    flat_rates[f"{size_cat}_{car_cat}"] = edited_rates.loc[size_cat, car_cat]
+                    key = f"{size_cat}_{car_cat}"
+                    # Safely get values, defaulting to 0 if structure changes
+                    count = edited_hh.loc[size_cat, car_cat] if (size_cat in edited_hh.index and car_cat in edited_hh.columns) else 0
+                    rate = edited_rates.loc[size_cat, car_cat]
+                    
+                    hh_counts[key] = count
+                    flat_rates[key] = rate
             
             total_trips = cross_classification_trips(hh_counts, flat_rates)
             
