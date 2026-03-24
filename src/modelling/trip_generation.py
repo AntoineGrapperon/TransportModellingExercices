@@ -26,22 +26,30 @@ def calculate_regression_trips(
     return intercept + (p_coeff * population) + (e_coeff * employment)
 
 def cross_classification_trips(
-    hh_data: Dict[str, int], 
-    trip_rates: pd.DataFrame
+    hh_counts: Dict[str, int], 
+    trip_rates: Dict[str, float]
 ) -> float:
     """
     Calculate trips using category analysis (cross-classification).
     
     Args:
-        hh_data (Dict[str, int]): Number of households in each category (e.g., size vs. income).
-        trip_rates (pd.DataFrame): Average trips per household for each category.
+        hh_counts (Dict[str, int]): Number of households in each category.
+        trip_rates (Dict[str, float]): Average trips per household for each category.
         
     Returns:
         float: Total estimated trips.
     """
-    # Simple implementation: matching household counts to trip rate table
-    total_trips = 0
-    for category, count in hh_data.items():
-        if category in trip_rates.index:
-            total_trips += count * trip_rates.loc[category, "rate"]
-    return float(total_trips)
+    total_trips = 0.0
+    for category, count in hh_counts.items():
+        rate = trip_rates.get(category, 0.0)
+        total_trips += count * rate
+    return total_trips
+
+def get_sample_trip_rates() -> pd.DataFrame:
+    """Returns a sample trip rate table for educational purposes."""
+    data = {
+        "0 Cars": [0.5, 1.2, 2.5],
+        "1 Car": [1.5, 2.8, 4.2],
+        "2+ Cars": [2.2, 4.5, 6.8]
+    }
+    return pd.DataFrame(data, index=["1 Person", "2-3 Persons", "4+ Persons"])
