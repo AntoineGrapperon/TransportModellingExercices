@@ -4,6 +4,7 @@ import numpy as np
 import plotly.express as px
 from src.modelling.trip_generation import calculate_regression_trips, cross_classification_trips, get_sample_trip_rates
 from src.modelling.trip_distribution import gravity_model, furness_balancing
+from src.modelling.modal_split import calculate_utilities, multinomial_logit
 
 def main():
     st.set_page_config(page_title="Transport Modelling Exercises", layout="wide")
@@ -205,6 +206,77 @@ def main():
             color_continuous_scale='Viridis'
         )
         st.plotly_chart(fig, use_container_width=True)
+
+    elif module == "3. Modal Split":
+        st.header("Step 3: Modal Split")
+        
+        with st.expander("Theoretical Concept: Discrete Choice & Utility"):
+            st.write("""
+            Modal Split determines the proportion of travelers choosing each transport mode.
+            The **Multinomial Logit (MNL)** model is widely used:
+            
+            $$P_m = \\frac{\\exp(V_m)}{\\sum_{n} \\exp(V_n)}$$
+            
+            Where $V_m$ is the utility of mode $m$:
+            $$V_m = ASC_m + \\beta_{time} \\cdot T_m + \\beta_{cost} \\cdot C_m$$
+            
+            - $ASC_m$: Alternative Specific Constant
+            - $\\beta_{time}, \\beta_{cost}$: Sensitivity coefficients (typically negative)
+            """)
+
+        st.subheader("Exercise: Utility & Choice Probabilities")
+        
+        col1, col2 = st.columns([2, 1])
+        
+        with col2:
+            st.markdown("### Global Sensitivity")
+            b_time = st.slider("Beta Time (Travel Time sensitivity)", -0.10, 0.0, -0.02, step=0.005)
+            b_cost = st.slider("Beta Cost (Travel Cost sensitivity)", -0.50, 0.0, -0.05, step=0.01)
+            coeffs = {"beta_time": b_time, "beta_cost": b_cost}
+            
+            if b_cost != 0:
+                vot = b_time / b_cost
+                st.info(f"Implied Value of Time (VoT): **{abs(vot * 60):.2f} $/hr**")
+
+        with col1:
+            st.markdown("### Mode Characteristics")
+            modes_df = pd.DataFrame([
+                {"Mode": "Car", "ASC": 0.0, "Time (min)": 20, "Cost ($)": 5.0},
+                {"Mode": "Bus", "ASC": -0.5, "Time (min)": 35, "Cost ($)": 2.0},
+                {"Mode": "Train", "ASC": -0.2, "Time (min)": 25, "Cost ($)": 3.5}
+            ])
+            edited_modes = st.data_editor(modes_df, key="modes_editor", hide_index=True)
+            
+        # Preparation for calculation
+        modes_list = []
+        for _, row in edited_modes.iterrows():
+            modes_list.append({
+                "asc": row["ASC"],
+                "time": row["Time (min)"],
+                "cost": row["Cost ($)"]
+            })
+            
+        utilities = calculate_utilities(modes_list, coeffs)
+        probs = multinomial_logit(utilities)
+        
+        # Results
+        st.divider()
+        res_df = edited_modes.copy()
+        res_df["Utility"] = utilities
+        res_df["Probability"] = probs
+        res_df["Share (%)"] = probs * 100
+        
+        st.subheader("Results: Mode Shares")
+        cols = st.columns(len(res_df))
+        for i, row in res_df.iterrows():
+            with cols[i]:
+                st.metric(row["Mode"], f"{row['Share (%)']:.1f}%")
+        
+        st.dataframe(res_df.style.format({"Utility": "{:.2f}", "Probability": "{:.4f}", "Share (%)": "{:.1f}%"}))
+        
+        # Visualizations
+        fig_pie = px.pie(res_df, values='Probability', names='Mode', title='Mode Share Distribution', hole=.3)
+        st.plotly_chart(fig_pie, use_container_width=True)
 
 if __name__ == "__main__":
     main()
