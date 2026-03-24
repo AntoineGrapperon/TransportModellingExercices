@@ -46,6 +46,10 @@ def main():
                 - $a$ = Constant/Intercept
                 - $P_i$ = Population in zone $i$
                 - $E_i$ = Employment in zone $i$
+                
+                **Model Estimation:**
+                1. **Variable Selection:** Relevant variables (like population, income, vehicle ownership) are identified through correlation analysis to find which factors most strongly influence trip making.
+                2. **Coefficient Estimation:** The coefficients ($b_1, b_2$) are estimated using Ordinary Least Squares (OLS) regression on survey data (e.g., Household Travel Surveys) to minimize the difference between observed and predicted trips.
                 """)
 
             st.subheader("Exercise: Calculate Zonal Trips")
