@@ -154,18 +154,19 @@ def main():
         st.header("Step 2: Trip Distribution")
         
         with st.expander("Theoretical Concept: The Gravity Model"):
-            st.write("""
-            Trip distribution links the origins (Productions) to destinations (Attractions).
-            The **Gravity Model** is based on Newton's law of gravitation:
+            st.write("Trip distribution links the origins (Productions) to destinations (Attractions). The **Gravity Model** is based on Newton's law of gravitation:")
             
-            $$T_{ij} = P_i \frac{A_j F_{ij}}{\sum_j A_j F_{ij}}$$
+            st.latex(r"T_{ij} = P_i \frac{A_j F_{ij}}{\sum_k A_k F_{ik}}")
             
-            Where:
-            - $T_{ij}$ = Trips between zone $i$ and zone $j$
-            - $P_i$ = Trips produced in zone $i$
-            - $A_j$ = Trips attracted to zone $j$
-            - $F_{ij}$ = Friction factor (typically $\exp(-\beta C_{ij})$)
+            st.write("Where:")
+            st.markdown(r"""
+            - $T_{ij}$: Trips between zone $i$ and zone $j$
+            - $P_i$: Trips produced in zone $i$
+            - $A_j$: Trips attracted to zone $j$
+            - $F_{ij}$: Friction factor, typically modeled as exponential decay:
             """)
+            st.latex(r"F_{ij} = e^{-\beta C_{ij}}")
+            st.markdown(r"- $\beta$: Sensitivity parameter (larger $\beta$ means people are more sensitive to travel cost/time)")
 
         st.subheader("Exercise: Gravity Model Calibration")
         
