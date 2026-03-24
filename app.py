@@ -1,6 +1,9 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
+import plotly.express as px
 from src.modelling.trip_generation import calculate_regression_trips, cross_classification_trips, get_sample_trip_rates
+from src.modelling.trip_distribution import gravity_model, furness_balancing
 
 def main():
     st.set_page_config(page_title="Transport Modelling Exercises", layout="wide")
@@ -133,6 +136,78 @@ def main():
                     'color': {'field': 'Cars', 'type': 'nominal'}
                 }
             }, use_container_width=True)
+
+    elif module == "2. Trip Distribution":
+        st.header("Step 2: Trip Distribution")
+        
+        with st.expander("Theoretical Concept: The Gravity Model"):
+            st.write("""
+            Trip distribution links the origins (Productions) to destinations (Attractions).
+            The **Gravity Model** is based on Newton's law of gravitation:
+            
+            $$T_{ij} = P_i \frac{A_j F_{ij}}{\sum_j A_j F_{ij}}$$
+            
+            Where:
+            - $T_{ij}$ = Trips between zone $i$ and zone $j$
+            - $P_i$ = Trips produced in zone $i$
+            - $A_j$ = Trips attracted to zone $j$
+            - $F_{ij}$ = Friction factor (typically $\exp(-\beta C_{ij})$)
+            """)
+
+        st.subheader("Exercise: Gravity Model Calibration")
+        
+        num_zones = st.slider("Number of Zones", 2, 5, 3)
+        zone_names = [f"Zone {i+1}" for i in range(num_zones)]
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("### Productions (P_i)")
+            p_data = pd.DataFrame({"Zone": zone_names, "Trips": [1000] * num_zones})
+            edited_p = st.data_editor(p_data, key="p_editor", hide_index=True)
+            
+        with col2:
+            st.markdown("### Attractions (A_j)")
+            a_data = pd.DataFrame({"Zone": zone_names, "Trips": [1000] * num_zones})
+            edited_a = st.data_editor(a_data, key="a_editor", hide_index=True)
+            
+        st.markdown("### Cost Matrix (C_ij)")
+        cost_df = pd.DataFrame(
+            np.eye(num_zones) * 5 + 10, # 5 for intra-zonal, 10 for inter-zonal
+            columns=zone_names,
+            index=zone_names
+        )
+        edited_costs = st.data_editor(cost_df)
+        
+        beta = st.slider("Beta (Friction Sensitivity)", 0.0, 1.0, 0.1, step=0.01)
+        
+        # Calculate Distributed Matrix
+        p_array = edited_p["Trips"].values
+        a_array = edited_a["Trips"].values
+        cost_matrix = edited_costs.values
+        
+        od_matrix = gravity_model(p_array, a_array, cost_matrix, beta)
+        
+        # Display Results
+        st.divider()
+        st.subheader("Resulting O-D Matrix (Trip Matrix)")
+        od_df = pd.DataFrame(od_matrix, columns=zone_names, index=zone_names)
+        st.dataframe(od_df.style.format("{:.0f}"))
+        
+        # Heatmap
+        fig = px.imshow(
+            od_matrix, 
+            labels=dict(x="Destination", y="Origin", color="Trips"),
+            x=zone_names, 
+            y=zone_names,
+            text_auto=".0f",
+            aspect="auto",
+            color_continuous_scale='Viridis'
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
+if __name__ == "__main__":
+    main()
 
 if __name__ == "__main__":
     main()
