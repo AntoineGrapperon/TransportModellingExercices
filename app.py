@@ -166,6 +166,7 @@ def main():
             - $F_{ij}$: Friction factor, typically modeled as exponential decay:
             """)
             st.latex(r"F_{ij} = e^{-\beta C_{ij}}")
+            st.markdown(r"- $C_{ij}$: Generalized cost (or travel time) between zone $i$ and zone $j$")
             st.markdown(r"- $\beta$: Sensitivity parameter (larger $\beta$ means people are more sensitive to travel cost/time)")
 
         st.subheader("Exercise: Gravity Model Calibration")
