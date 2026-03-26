@@ -3,10 +3,38 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
+import platform
+import psutil
+import os
+import sys
+from datetime import datetime
 from src.modelling.trip_generation import calculate_regression_trips, cross_classification_trips, get_sample_trip_rates
 from src.modelling.trip_distribution import gravity_model, furness_balancing
 from src.modelling.modal_split import calculate_utilities, multinomial_logit
 from src.modelling.traffic_assignment import bpr_function, solve_2path_equilibrium
+
+def get_system_info():
+    """Retrieves detailed information about the host machine."""
+    mem = psutil.virtual_memory()
+    disk = psutil.disk_usage('/')
+    
+    return {
+        "Operating System": f"{platform.system()} {platform.release()}",
+        "Version": platform.version(),
+        "Machine Architecture": platform.machine(),
+        "Processor": platform.processor() or "N/A",
+        "Python Version": sys.version.split()[0],
+        "CPU Count (Logical)": psutil.cpu_count(),
+        "CPU Count (Physical)": psutil.cpu_count(logical=False),
+        "Total Memory": f"{mem.total / (1024**3):.2f} GB",
+        "Available Memory": f"{mem.available / (1024**3):.2f} GB",
+        "Memory Usage (%)": f"{mem.percent}%",
+        "Total Disk Space": f"{disk.total / (1024**3):.2f} GB",
+        "Used Disk Space": f"{disk.used / (1024**3):.2f} GB",
+        "Free Disk Space": f"{disk.free / (1024**3):.2f} GB",
+        "Disk Usage (%)": f"{disk.percent}%",
+        "Boot Time": datetime.fromtimestamp(psutil.boot_time()).strftime("%Y-%m-%d %H:%M:%S")
+    }
 
 def main():
     st.set_page_config(page_title="Transport Modelling Exercises", layout="wide")
@@ -19,14 +47,31 @@ def main():
     
     if module == "Introduction":
         st.header("Transport Demand Modelling: The 4-Step Model")
-        st.markdown("""
-        ### Educational Overview
-        The 4-step model is the traditional approach to urban transportation planning.
-        1. **Trip Generation**: How many trips start and end in each zone?
-        2. **Trip Distribution**: Where do these trips go?
-        3. **Modal Split**: What transport modes are used?
-        4. **Traffic Assignment**: What routes are taken?
-        """)
+        
+        col_main, col_sys = st.columns([2, 1])
+        
+        with col_main:
+            st.markdown("""
+            ### Educational Overview
+            The 4-step model is the traditional approach to urban transportation planning.
+            1. **Trip Generation**: How many trips start and end in each zone?
+            2. **Trip Distribution**: Where do these trips go?
+            3. **Modal Split**: What transport modes are used?
+            4. **Traffic Assignment**: What routes are taken?
+            """)
+            
+        with col_sys:
+            with st.expander("🖥️ Host System Information", expanded=True):
+                try:
+                    sys_info = get_system_info()
+                    for key, value in sys_info.items():
+                        st.write(f"**{key}:** `{value}`")
+                        
+                    # Real-time metrics in small charts
+                    st.progress(psutil.cpu_percent() / 100, text=f"CPU Load: {psutil.cpu_percent()}%")
+                    st.progress(psutil.virtual_memory().percent / 100, text=f"RAM Usage: {psutil.virtual_memory().percent}%")
+                except Exception as e:
+                    st.error(f"Could not retrieve system info: {e}")
         
     elif module == "1. Trip Generation":
         st.header("Step 1: Trip Generation")
