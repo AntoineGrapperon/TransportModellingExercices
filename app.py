@@ -42,7 +42,7 @@ def main():
     st.sidebar.title("4-Step Demand Model")
     module = st.sidebar.selectbox(
         "Select a Module",
-        ["Introduction", "1. Trip Generation", "2. Trip Distribution", "3. Modal Split", "4. Traffic Assignment"]
+        ["Introduction", "1. Trip Generation", "2. Trip Distribution", "3. Modal Split", "4. Traffic Assignment", "5. Model Completion"]
     )
     
     if module == "Introduction":
@@ -409,6 +409,30 @@ def main():
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
         )
         st.plotly_chart(fig, use_container_width=True)
+
+    elif module == "5. Model Completion":
+        st.header("Step 5: Model Completion & Certification")
+        st.balloons()
+        
+        st.success("### 🎉 Congratulations, Trainee!")
+        
+        st.markdown("""
+        You have successfully navigated through the fundamental pillars of the **4-Step Transport Demand Model**. 
+        By mastering these concepts, you are now equipped with the theoretical foundation used by urban planners 
+        and transport engineers worldwide to shape the future of our cities.
+        
+        **Your progress today:**
+        - [x] **Trip Generation**: Quantified the demand.
+        - [x] **Trip Distribution**: Mapped the spatial interactions.
+        - [x] **Modal Split**: Understood choice behavior.
+        - [x] **Traffic Assignment**: Predicted network equilibrium.
+        
+        > "The best way to predict the future is to create it." — *Peter Drucker*
+        
+        Keep modelling, keep optimizing, and remember: every data point represents a person moving toward their destination. **Excellent work!**
+        """)
+        
+        st.info("You are now ready to tackle real-world datasets and complex multi-modal simulations.")
 
 if __name__ == "__main__":
     main()
